@@ -1,0 +1,17 @@
+set -exu
+echo "Tgiggering Jira filter"
+FilterId=$1        #FilterId should be associate with the User
+SubID=$2
+Jira_URL=$3 #like XYZ.atlassian.net
+username=ABC
+JIRA_API_TOKEN=xyz
+
+echo "fetch cookies and atl_token"
+curl   -o /dev/null -k -c cookies.txt -w "%{http_code}"  -u ${username}:${JIRA_API_TOKEN}  -X GET   "https://${Jira_URL}/secure/ViewSubscriptions.jspa?filterId=${FilterId}"
+
+ALT_TOKEN=` cat cookies.txt | grep -i "atlassian.xsrf.token"| awk '{print $7}'`
+
+echo "Triggering mail"
+curl -o /dev/null -kL -b cookies.txt -w "%{http_code}" -u ${username}:${JIRA_API_TOKEN} "https://${Jira_URL}/secure/RunSubscription.jspa?atl_token=${ALT_TOKEN}&subId=${SubID}&filterId=${FilterId}"
+
+rm cookies.txt
