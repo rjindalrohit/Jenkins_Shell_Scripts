@@ -24,13 +24,14 @@ fi
 
 wait_for_success=true
 count=0
-max=5
+max=10
 while [[ "${wait_for_success}" = "true" && ${count} -lt ${max} ]]
 do
-	ceTaskStatus=$(curl -s ${ceTaskUrl} | jq -r .task.status)
+	ceTaskStatus=$(curl -s ${ceTaskUrl} |  /home/pawan.kumar/jq/jq -r .task.status)
+    echo ${ceTaskUrl}
     if [ "${ceTaskStatus}" = "PENDING" ] || [ "${ceTaskStatus}" = "IN_PROGRESS" ] ; then
-    	echo "Quality_Gate -> Task Id ${ceTaskId} status is : ${ceTaskStatus} -- waiting 20 Sec before Next Check"
-        sleep 20
+    	echo "Quality_Gate -> Task Id ${ceTaskId} status is : ${ceTaskStatus} -- waiting 60 Sec before Next Check"
+        sleep 60
         count=$((count + 1))
     fi
     if [ "${ceTaskStatus}" = "SUCCESS" ]; then
@@ -39,11 +40,14 @@ do
     fi
     
 done
-
+if [[ "$count" -eq ${max} ]];then
+	exit 1
+    echo "sonar is taking more time please increase the waiting time"
+fi
 analysisId=$(curl -s ${ceTaskUrl} |  /home/pawan.kumar/jq/jq -r .task.analysisId)
 echo "Quality_Gate -> Analysis ID is: $analysisId"
-
-QG_Status=$(curl -s ${serverUrl}/api/qualitygates/project_status?analysisId="${analysisId}" |  jq -r .projectStatus.status)
+echo ${serverUrl}/api/qualitygates/project_status?analysisId="${analysisId}"
+QG_Status=$(curl -s ${serverUrl}/api/qualitygates/project_status?analysisId="${analysisId}" |  /home/pawan.kumar/jq/jq -r .projectStatus.status)
 if [ "${QG_Status}" != "OK" ]; then
 	echo "Quality_Gate -> Quality Gate is Not OK. Breaking the build"
     exit 1
